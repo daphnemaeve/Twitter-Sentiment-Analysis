@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+
+import os
+import shutil
+
 import tensorflow as tf
 import tensorflow_hub as hub
 import tensorflow_text as text
@@ -7,8 +12,13 @@ import matplotlib.pyplot as plt
 
 tf.get_logger().setLevel('ERROR')
 
-dataset = open("data/labeled_data.csv")
+dataset = tf.data.experimental.make_csv_dataset(
+    "data/training.csv"
+    , label_name="party"
+    , header=True
+    , batch_size=32
+    , shuffle_seed=42)
 
-#need to split data into training and testing
-
-print(dataset)
+#print a single batch
+iterator = dataset.as_numpy_iterator()
+print(next(iterator))
