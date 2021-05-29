@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 
 tf.get_logger().setLevel('ERROR')
 
+#pull data from csv file
 training = tf.data.experimental.make_csv_dataset(
     "data/training.csv"
     , label_name="party"
@@ -24,32 +25,22 @@ training = tf.data.experimental.make_csv_dataset(
 iterator = training.as_numpy_iterator()
 print(next(iterator))
 
-#Select BERT model and preprocessor
+#select BERT model and preprocessor
 bert = 'https://tfhub.dev/tensorflow/small_bert/bert_en_uncased_L-4_H-512_A-8/1'
 preprocessor = 'https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3'
 
-#Load preprocessor into hub.KerasLayer
+#load preprocessor into hub.KerasLayer
 bert_preprocess_model = hub.KerasLayer(preprocessor)
 
 text_test = ['this is a democratic tweet']
 text_preprocessed = bert_preprocess_model(text_test)
 
-#print(f'Keys	   : {list(text_preprocessed.keys())}')
-#print(f'Shape	   : {text_preprocessed["input_word_ids"].shape}')
-#print(f'Word Ids   : {text_preprocessed["input_word_ids"][0, :12]}')
-#print(f'Input Mask : {text_preprocessed["input_mask"][0, :12]}')
-#print(f'Type Ids   : {text_preprocessed["input_type_ids"][0, :12]}')
-
+#load bert model
 bert_model = hub.KerasLayer(bert)
 
 bert_results = bert_model(text_preprocessed)
 
-#print(f'Loaded BERT: {bert}')
-#print(f'Pooled Outputs Shape: {bert_results["pooled_output"].shape}')
-#print(f'Pooled Outputs Values: {bert_results["pooled_output"][0, :12]}')
-#print(f'Sequence Outputs Shape: {bert_results["sequence_output"].shape}')
-#print(f'Sequence Outputs Values: {bert_results["sequence_output"][0, :12]}')
-
+#define bert model
 def build_classifier_model():
 	text_input = tf.keras.layers.Input(shape=(), dtype=tf.string, name='text')
 	preprocessing_layer = hub.KerasLayer(preprocessor, name='preprocessing')
@@ -63,4 +54,28 @@ def build_classifier_model():
 
 classifier_model = build_classifier_model()
 bert_raw_result = classifier_model(tf.constant(text_test))
-print(tf.sigmoid(bert_raw_result))
+
+#loss function
+loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+metrics = tf.metrics.BinaryAccuracy()
+
+#optimizer
+epochs = 5
+steps_per_epoch = tf.data.experimental.cardinality(training).numpy()
+num_train_steps = steps_per_epoch * epochs
+num_warmup_steps = int(0.1*num_train_steps)
+
+init_lr = 3e-5
+optimizer = optimization.create_optimizer(init_lr=init_lr,
+										  num_train_steps=num_train_steps,
+										  num_warmup_steps=num_warmup_steps,
+										  optimizer_type='adamw')
+
+#load model and train
+classifier_model.compile(optimizer=optimizer,
+						 loss=loss,
+						 metrics=metrics)
+
+print(f'Training model with {bert}')
+#also can add validation dataset
+#history = classifier_model.fit(x=training, epochs=epochs)
