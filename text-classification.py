@@ -16,14 +16,13 @@ tf.get_logger().setLevel('ERROR')
 #pull data from csv file
 training = tf.data.experimental.make_csv_dataset(
     "data/training.csv"
-    , label_name="party"
+    , label_name="label"
     , header=True
     , batch_size=32
     , shuffle_seed=42)
 
 #print a single batch
 iterator = training.as_numpy_iterator()
-print(next(iterator))
 
 #select BERT model and preprocessor
 bert = 'https://tfhub.dev/tensorflow/small_bert/bert_en_uncased_L-4_H-512_A-8/1'
@@ -49,20 +48,22 @@ def build_classifier_model():
         outputs = encoder(encoder_inputs)
         net = outputs['pooled_output']
         net = tf.keras.layers.Dropout(0.1)(net)
-        net = tf.keras.layers.Dense(1, activation=None, name='classifier')(net)
+        net = tf.keras.layers.Dense(4, activation=None, name='classifier')(net)
         return tf.keras.Model(text_input, net)
 
 classifier_model = build_classifier_model()
 bert_raw_result = classifier_model(tf.constant(text_test))
 
 #loss function
-loss = tf.keras.losses.SparseCategoricalCrossentropy([0,1,2,3])
+loss = tf.keras.losses.SparseCategoricalCrossentropy()
 # metrics = tf.metrics.SparseTopKCategoricalAccuracy(k=4)
 
 #optimizer
 epochs = 5
 steps_per_epoch = tf.data.experimental.cardinality(training).numpy()
+print(steps_per_epoch)
 num_train_steps = steps_per_epoch * epochs
+print(num_train_steps)
 num_warmup_steps = int(0.1*num_train_steps)
 
 init_lr = 3e-5

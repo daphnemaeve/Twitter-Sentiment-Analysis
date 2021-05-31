@@ -38,10 +38,10 @@ testing = data[int(size*percent):size]
 system("rm {training.csv,testing.csv} &> /dev/null")
 with open("training.csv", 'w') as csvfile:
     csvwriter = csv.writer(csvfile)
-    csvwriter.writerow(["party","text"])
+    csvwriter.writerow(["label","text"])
     csvwriter.writerows(sum(sum(training,[]),[]))
 
 with open("testing.csv", 'w') as csvfile:
     csvwriter = csv.writer(csvfile)
-    csvwriter.writerow(["party","text"])
+    csvwriter.writerow(["label","text"])
     csvwriter.writerows(sum(sum(testing,[]),[]))
