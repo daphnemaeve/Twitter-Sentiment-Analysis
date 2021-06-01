@@ -80,3 +80,8 @@ classifier_model.compile(optimizer=optimizer,
 print(f'Training model with {bert}')
 #also can add validation dataset
 history = classifier_model.fit(x=training, epochs=epochs)
+
+dataset_name = 'twitter'
+saved_model_path = '/{}_bert'.format(dataset_name.replace('/', '_'))
+
+classifier_model.save(saved_model_path, include_optimizer=False)
