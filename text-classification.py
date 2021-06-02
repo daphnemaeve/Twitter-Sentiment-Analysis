@@ -21,6 +21,12 @@ training = tf.data.experimental.make_csv_dataset(
     , batch_size=32
     , shuffle_seed=42)
 
+testing = tf.data.experimental.make_csv_dataset(
+    "data/testing.csv"
+    , label_name="label"
+    , header=True
+    , batch_size=32
+    , shuffle_seed=42)
 #print a single batch
 iterator = training.as_numpy_iterator()
 
@@ -77,11 +83,23 @@ classifier_model.compile(optimizer=optimizer,
                          loss=loss,
                          metrics=['accuracy'])
 
-print(f'Training model with {bert}')
+#print(f'Training model with {bert}')
 #also can add validation dataset
-history = classifier_model.fit(x=training, epochs=epochs)
+#history = classifier_model.fit(x=training, epochs=epochs)
 
-dataset_name = 'twitter'
-saved_model_path = '/{}_bert'.format(dataset_name.replace('/', '_'))
+#dataset_name = 'twitter'
+#saved_model_path = '/{}_bert'.format(dataset_name.replace('/', '_'))
 
-classifier_model.save(saved_model_path, include_optimizer=False)
+#classifier_model.save(saved_model_path, include_optimizer=False)
+
+def print_results(inputs, results):
+		result_for_printing = \
+						[f'input: {inputs[i]:<30} : score: {results[i][0]:.6f}'
+										for i in range(len(inputs))]
+		print(*result_for_printing, sep='\n')
+		print()
+
+results = classifier_model.predict(testing, verbose=1)
+
+print('Results:')
+print_results(testing, results)
