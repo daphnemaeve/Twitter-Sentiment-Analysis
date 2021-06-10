@@ -3,21 +3,15 @@
 import os
 import shutil
 
-import tensorflow as tf
-import tensorflow_hub as hub
-import tensorflow_text as text
 import pandas as pd
 import numpy as np
-from official.nlp import optimization
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import SGDClassifier
 from sklearn.pipeline import Pipeline
 
 import matplotlib.pyplot as plt
-
-tf.get_logger().setLevel('ERROR')
 
 #pull data from csv file
 training = pd.read_csv("data/training.csv")
@@ -26,6 +20,8 @@ print(training.head())
 
 training_text = training['text']
 training_labels = training['label']
+testing_text = testing['text']
+testing_labels = testing['label']
 
 count_vect = CountVectorizer()
 training_counts = count_vect.fit_transform(training_text)
@@ -33,15 +29,16 @@ training_counts = count_vect.fit_transform(training_text)
 tfidf_transformer = TfidfTransformer(use_idf=False).fit(training_counts)
 training_tfidf = tfidf_transformer.transform(training_counts)
 
-test_tweets = ['The United States just hit 50,000 new coronavirus cases in a day yesterday—and we were warned we could see 100,000 per day. Instead of taking meaningful action to reduce cases, Trump is waving the white flag.','McConnell, Pence, Barr, Pompeo, Miller... they all got away with it. Some already being rehabilitated by the ""resistance.""','The elections are no joking matter.','This is what real election interference looks like.']
-
-new_counts = count_vect.transform(test_tweets)
-new_tfidf = tfidf_transformer.transform(new_counts)
-
 #clf = svm.SVC()
 #clf.fit(training_tfidf, training_labels)
 
-clf = MultinomialNB().fit(training_tfidf, training_labels)
+parameters = {
+				'vect__ngram_range': [(1,1), (1,2), (1,3), (1,4)],
+				'tfidf__use_idf': (True, False),
+				'clf__alpha': (1e-2, 1e-3),
+}
+
+#clf = MultinomialNB().fit(training_tfidf, training_labels)
 
 text_clf = Pipeline([
 		('vect', CountVectorizer()),
@@ -53,10 +50,14 @@ text_clf = Pipeline([
 
 text_clf.fit(training_text, training_labels)
 
-testing_text = testing['text']
-testing_labels = testing['label']
+gs_clf = GridSearchCV(text_clf, parameters, cv=5, n_jobs=-1)
+gs_clf = gs_clf.fit(training_text, training_labels)
 
-predicted = text_clf.predict(testing_text)
+print(gs_clf.best_score_)
+for param_name in sorted(parameters.keys()):
+		print("%s: %r" % (param_name, gs_clf.best_params_[param_name]))
+
+predicted = gs_clf.predict(testing_text)
 for i in range(50):
 	print("Text: {}".format(testing_text[i]))
 	print("Predicted party: {}".format(predicted[i]))

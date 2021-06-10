@@ -12,7 +12,10 @@ import re
 percent = 0.80
 
 training_size = 10000
-testing_size = 2000
+testing_size = 2500
+
+large_training = 100000
+large_testing = 25000
 
 parties = ["democrat", "republican", "green", "libertarian"]
 
@@ -54,6 +57,9 @@ size = len(data)
 training = data[0:int(size*percent)]
 testing = data[int(size*percent):size]
 
+large_training = training[0:large_training]
+large_testing = testing[0:large_testing]
+
 training = training[0:training_size]
 testing = testing[0:testing_size]
 
@@ -67,3 +73,14 @@ with open("testing.csv", 'w') as csvfile:
     csvwriter = csv.writer(csvfile)
     csvwriter.writerow(["label","text"])
     csvwriter.writerows(testing)
+
+system("rm {large_training.csv,large_testing.csv} &> /dev/null")
+with open("large_training.csv", 'w') as csvfile:
+    csvwriter = csv.writer(csvfile,quoting=csv.QUOTE_NONNUMERIC)
+    csvwriter.writerow(["label","text"])
+    csvwriter.writerows(large_training)
+
+with open("large_testing.csv", 'w') as csvfile:
+    csvwriter = csv.writer(csvfile)
+    csvwriter.writerow(["label","text"])
+    csvwriter.writerows(large_testing)
